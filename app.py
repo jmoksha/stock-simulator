@@ -50,9 +50,10 @@ def get_price(symbol):
 # Use absolute path so Flask always finds templates no matter where you run from
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'), static_folder=os.path.join(BASE_DIR, 'static'))
-app.secret_key = "secret123"
+app.secret_key = os.environ.get("SECRET_KEY", "secret123")
 app.config["ANTHROPIC_API_KEY"] = "YOUR_ANTHROPIC_API_KEY_HERE"
-app.config["GROQ_API_KEY"] = "YOUR_GROQ_API_KEY_HERE"
+import os
+app.config["GROQ_API_KEY"] = os.environ.get("GROQ_API_KEY", "")
 
 # DATABASE CONFIG
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stocks.db'

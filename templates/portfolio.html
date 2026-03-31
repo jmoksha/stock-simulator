@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Portfolio</title>
+<link rel="stylesheet" href="/static/style.css">
+
+</head>
+
+<body>
+<div class="navbar">
+  <div class="logo">📈 Stock Simulator</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/market">Market</a>
+    <a href="/portfolio">Portfolio</a>
+    <a href="/advisor">AI Advisor</a>
+    <a href="/marketss" class="active" >Market Sentiment</a>
+    <a href="/history">Transaction History</a>
+
+      {% if is_admin %}
+      <a href="/admin">Admin</a>
+      {% endif %}
+      <a href="/logout">Logout</a>
+  </div>
+</div>
+<div class="container">
+
+<h1>Your Portfolio</h1>
+
+<table>
+
+<tr>
+<th>Stock</th>
+<th>Quantity</th>
+<th>Buy Price</th>
+<th>Current Price</th>
+<th>Profit / Loss</th>
+<th>Sell</th>
+</tr>
+
+{% for stock in stocks %}
+
+<tr>
+
+<td>{{stock.symbol}}</td>
+
+<td>{{stock.qty}}</td>
+
+<td>₹ {{stock.buy_price}}</td>
+
+<td>₹ {{stock.current_price}}</td>
+
+<td>
+{% if stock.profit > 0 %}
+<span style="color:green;">₹ {{stock.profit}}</span>
+{% else %}
+<span style="color:red;">₹ {{stock.profit}}</span>
+{% endif %}
+</td>
+
+<td>
+
+<form action="/sell" method="POST">
+
+<input type="hidden" name="symbol" value="{{stock.symbol}}">
+
+<input type="number" name="qty" placeholder="Qty" required>
+
+<button type="submit">Sell</button>
+
+</form>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>

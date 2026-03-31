@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Market</title>
+
+<link rel="stylesheet" href="/static/style.css">
+
+<style>
+
+.stock-container{
+display:flex;
+gap:30px;
+margin-top:30px;
+align-items:flex-start;
+}
+
+.stock-info{
+flex:1;
+}
+
+.chart-box{
+flex:2;
+}
+
+#results{
+border:1px solid #ddd;
+max-height:200px;
+overflow-y:auto;
+background:white;
+position:absolute;
+width:300px;
+z-index:100;
+}
+
+#results div{
+padding:10px;
+cursor:pointer;
+}
+
+#results div:hover{
+background:#f1f1f1;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+
+<div class="navbar">
+  <div class="logo">📈 Stock Simulator</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/market">Market</a>
+    <a href="/portfolio">Portfolio</a>
+    <a href="/advisor">AI Advisor</a>
+    <a href="/marketss" class="active" >Market Sentiment</a>
+    <a href="/history">Transaction History</a>
+
+      {% if is_admin %}
+      <a href="/admin">Admin</a>
+      {% endif %}
+      <a href="/logout">Logout</a>
+  </div>
+</div>
+
+
+<div class="container">
+
+<h1>Stock Market</h1>
+
+
+<!-- SEARCH -->
+
+<div class="card">
+
+<h2>Search Stock</h2>
+
+<form method="POST">
+
+<input 
+type="text"
+id="search"
+name="symbol"
+placeholder="Search stock (Reliance, AAPL, TSLA...)"
+onkeyup="searchStocks()"
+autocomplete="off"
+required>
+
+<div id="results"></div>
+
+<button type="submit">Search</button>
+
+</form>
+
+</div>
+
+
+{% if error %}
+<p style="color:red;margin-top:15px">{{error}}</p>
+{% endif %}
+
+
+{% if stock %}
+
+<div class="stock-container">
+
+<!-- STOCK INFO -->
+
+<div class="card stock-info">
+
+<h2>{{stock.symbol}}</h2>
+
+<h3>Current Price</h3>
+
+<p style="font-size:26px;font-weight:bold;">&#8377; {{stock.price}}</p>
+
+<form action="/buy" method="POST">
+
+<input type="hidden" name="symbol" value="{{stock.symbol}}">
+<input type="hidden" name="price" value="{{stock.price}}">
+
+<input 
+type="number" 
+name="qty" 
+placeholder="Quantity"
+min="1"
+required>
+
+<button type="submit">Buy Stock</button>
+
+</form>
+
+</div>
+
+
+<!-- LIVE CHART -->
+
+<div class="card chart-box">
+
+<div id="tv_chart_container" style="height:450px;"></div>
+
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script type="text/javascript">
+new TradingView.widget({
+  "container_id": "tv_chart_container",
+  "autosize": true,
+  "symbol": "{{ tv_symbol }}",
+  "interval": "D",
+  "timezone": "Asia/Kolkata",
+  "theme": "dark",
+  "style": "1",
+  "locale": "en",
+  "toolbar_bg": "#0f172a",
+  "enable_publishing": false,
+  "allow_symbol_change": true
+});
+</script>
+
+</div>
+
+</div>
+
+{% endif %}
+
+
+<!-- AUTOCOMPLETE SCRIPT -->
+
+<div id="stocks-data" style="display:none;" data-stocks='{{ stocks|tojson }}'></div>
+
+<script>
+function searchStocks(){
+
+var raw = document.getElementById("stocks-data").getAttribute("data-stocks");
+var stocks = JSON.parse(raw);
+
+var input = document.getElementById("search").value.toLowerCase();
+var results = document.getElementById("results");
+
+results.innerHTML = "";
+
+if(input.length < 1){ return; }
+
+stocks.forEach(function(stock){
+
+if(
+stock.name.toLowerCase().includes(input) ||
+stock.symbol.toLowerCase().includes(input)
+){
+
+var div = document.createElement("div");
+div.classList.add("result-item");
+
+div.innerHTML = "<b>" + stock.symbol + "</b><br><small>" + stock.name + "</small>";
+
+div.onclick = function(){
+document.getElementById("search").value = stock.symbol;
+results.innerHTML = "";
+};
+
+results.appendChild(div);
+
+}
+
+});
+
+}
+</script>
+
+
+<!-- LIVE NEWS -->
+
+<div class="news-section">
+
+<h2>📰 Live Market News</h2>
+
+<div id="news-container">
+  <p style="color:#94a3b8;">Loading latest news...</p>
+</div>
+
+</div>
+
+<script>
+fetch("/news")
+  .then(r => r.json())
+  .then(articles => {
+    const box = document.getElementById("news-container");
+    if (!articles.length) {
+      box.innerHTML = "<p style='color:#94a3b8;'>Could not load news right now.</p>";
+      return;
+    }
+    box.innerHTML = articles.map(a => `
+      <div class="news-card">
+        <a href="${a.link}" target="_blank" style="color:white;text-decoration:none;">
+          <p style="margin:0;font-size:14px;font-weight:bold;">📰 ${a.title}</p>
+          <p style="margin:4px 0 0 0;font-size:11px;color:#94a3b8;">${a.date}</p>
+        </a>
+      </div>
+    `).join("");
+  })
+  .catch(() => {
+    document.getElementById("news-container").innerHTML = "<p style='color:#94a3b8;'>News unavailable.</p>";
+  });
+</script>
+
+
+</div>
+
+</body>
+</html>

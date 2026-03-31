@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>History</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+
+<body>
+<div class="navbar">
+  <div class="logo">📈 Stock Simulator</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/market">Market</a>
+    <a href="/portfolio">Portfolio</a>
+    <a href="/advisor">AI Advisor</a>
+    <a href="/marketss" class="active" >Market Sentiment</a>
+    <a href="/history">Transaction History</a>
+
+      {% if is_admin %}
+      <a href="/admin">Admin</a>
+      {% endif %}
+      <a href="/logout">Logout</a>
+  </div>
+</div>
+
+<h2>Transaction History</h2>
+
+<table>
+
+<tr>
+<th>Stock</th>
+<th>Quantity</th>
+<th>Price</th>
+<th>Type</th>
+<th>Date & Time</th>
+</tr>
+
+{% for t in transactions %}
+
+<tr>
+
+<td>{{t.symbol}}</td>
+
+<td>{{t.quantity}}</td>
+
+<td>₹ {{t.price}}</td>
+
+<td>
+{% if t.quantity > 0 %}
+<span style="color:green;">BUY</span>
+{% else %}
+<span style="color:red;">SELL</span>
+{% endif %}
+</td>
+
+<td>{{ t.time.strftime("%d %b %Y %I:%M %p") }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+<meta http-equiv="refresh" content="30">
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.charts-row {
+  display: flex;
+  gap: 24px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+}
+.chart-card {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  flex: 1;
+  min-width: 300px;
+}
+.chart-card h3 {
+  color: #94a3b8;
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.no-data {
+  color: #94a3b8;
+  text-align: center;
+  padding: 40px 0;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <div class="logo">📈 Stock Simulator</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/market">Market</a>
+    <a href="/portfolio">Portfolio</a>
+    <a href="/advisor">AI Advisor</a>
+    <a href="/marketss" class="active" >Market Sentiment</a>
+    <a href="/history">Transaction History</a>
+
+      {% if is_admin %}
+      <a href="/admin">Admin</a>
+      {% endif %}
+      <a href="/logout">Logout</a>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="cards">
+
+<div class="card">
+<h3>Balance</h3>
+<p>₹ {{user.balance}}</p>
+</div>
+
+<div class="card">
+<h3>Portfolio Value</h3>
+<p>₹ {{value}}</p>
+</div>
+
+<div class="card">
+<h3>Total Wealth</h3>
+<p>₹ {{total_wealth}}</p>
+</div>
+
+</div>
+
+
+<div class="charts-row">
+
+<!-- Portfolio Growth Line Chart -->
+<div class="chart-card" style="flex:2;">
+  <h3>📈 Portfolio Growth</h3>
+  <canvas id="growthChart" height="120"></canvas>
+  <p class="no-data" id="growth-no-data" style="display:none;">No transactions yet. Start trading to see your growth!</p>
+</div>
+
+<!-- Holdings Pie Chart -->
+<div class="chart-card" style="flex:1;">
+  <h3>🥧 Holdings Breakdown</h3>
+  {% if holdings %}
+  <canvas id="pieChart" height="200"></canvas>
+  {% else %}
+  <p class="no-data">No holdings yet.</p>
+  {% endif %}
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+// ── PIE CHART ──────────────────────────
+{% if holdings %}
+const pieCtx = document.getElementById("pieChart");
+new Chart(pieCtx, {
+  type: "doughnut",
+  data: {
+    labels: {{ holdings.keys() | list | tojson }},
+    datasets: [{
+      data: {{ holdings.values() | list | tojson }},
+      backgroundColor: [
+        "#0ea5e9","#22c55e","#f59e0b","#ef4444",
+        "#8b5cf6","#ec4899","#14b8a6","#f97316"
+      ],
+      borderWidth: 2,
+      borderColor: "#1e293b"
+    }]
+  },
+  options: {
+    plugins: {
+      legend: {
+        labels: { color: "#94a3b8", font: { size: 11 } }
+      }
+    }
+  }
+});
+{% endif %}
+
+
+// ── GROWTH LINE CHART ──────────────────
+fetch("/portfolio/history")
+  .then(r => r.json())
+  .then(data => {
+    if (!data || data.length === 0) {
+      document.getElementById("growth-no-data").style.display = "block";
+      document.getElementById("growthChart").style.display = "none";
+      return;
+    }
+
+    const labels = data.map(d => d.date);
+    const values = data.map(d => d.total);
+
+    // Add starting point
+    labels.unshift("Start");
+    values.unshift(1000000);
+    const growthCtx = document.getElementById("growthChart");
+    new Chart(growthCtx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Total Wealth (₹)",
+          data: values,
+          borderColor: "#22c55e",
+          backgroundColor: "rgba(34,197,94,0.1)",
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: "#22c55e",
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => "₹" + ctx.parsed.y.toLocaleString("en-IN")
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#94a3b8", font: { size: 10 } },
+            grid: { color: "#1e293b" }
+          },
+          y: {
+            ticks: {
+              color: "#94a3b8",
+              callback: val => "₹" + (val/100000).toFixed(1) + "L"
+            },
+            grid: { color: "#334155" }
+          }
+        }
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

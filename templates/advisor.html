@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Stock Advisor</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+
+.advisor-wrapper {
+  display: flex;
+  height: calc(100vh - 120px);
+  gap: 0;
+}
+
+/* HISTORY SIDEBAR */
+.history-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #020617;
+  border-right: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-header h3 {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.new-chat-btn {
+  background: #22c55e;
+  border: none;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.new-chat-btn:hover { background: #16a34a; }
+
+.session-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.session-list::-webkit-scrollbar { width: 4px; }
+.session-list::-webkit-scrollbar-track { background: transparent; }
+.session-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+.session-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 2px 6px;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+
+.session-item:hover { background: #1e293b; }
+.session-item.active { background: #1e293b; border-color: #334155; }
+
+.session-date {
+  font-size: 10px;
+  color: #64748b;
+  margin-bottom: 3px;
+}
+
+.session-preview {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.session-empty {
+  padding: 20px 14px;
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+.advisor-container {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.portfolio-panel {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.chat-panel {
+  flex: 1;
+}
+
+.holding-card {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 12px;
+}
+
+.holding-card h4 {
+  margin: 0 0 8px 0;
+  color: #38bdf8;
+  font-size: 16px;
+}
+
+.holding-card .row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 3px 0;
+}
+
+.holding-card .row span:last-child {
+  color: white;
+  font-weight: bold;
+}
+
+.profit-positive { color: #22c55e !important; }
+.profit-negative { color: #ef4444 !important; }
+
+.chat-box {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 20px;
+  max-height: 450px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.message {
+  margin-bottom: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.message.user {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.avatar.ai { 
+  background: linear-gradient(135deg, #fbbf24, #f59e0b); 
+  font-size: 20px;
+  box-shadow: 0 0 15px rgba(251,191,36,0.7);
+  animation: pulse-glow 2s infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(251,191,36,0.6); }
+  50% { box-shadow: 0 0 25px rgba(251,191,36,1); }
+}
+.avatar.user-av { 
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  font-size: 18px;
+}
+
+.bubble {
+  background: #0f172a;
+  padding: 12px 16px;
+  border-radius: 12px;
+  max-width: 75%;
+  width: fit-content;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+}
+
+.message.user .bubble {
+  background: #1d4ed8;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.chat-input-row input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: white;
+  font-size: 14px;
+}
+
+.chat-input-row button {
+  padding: 12px 20px;
+  background: #0ea5e9;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.chat-input-row button:disabled {
+  background: #334155;
+  cursor: not-allowed;
+}
+
+.quick-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.quick-btn {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 7px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.quick-btn:hover {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+}
+
+.typing {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: #0f172a;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.typing span {
+  width: 8px;
+  height: 8px;
+  background: #94a3b8;
+  border-radius: 50%;
+  animation: bounce 1.2s infinite;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+.balance-card {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.balance-card h4 { color: #94a3b8; margin: 0; font-size: 13px; }
+.balance-card p { font-size: 22px; margin: 5px 0 0 0; color: #22c55e; }
+
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="logo">📈 Stock Simulator</div>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/market">Market</a>
+    <a href="/portfolio">Portfolio</a>
+    <a href="/advisor">AI Advisor</a>
+    <a href="/marketss" class="active" >Market Sentiment</a>
+    <a href="/history">Transaction History</a>
+
+      {% if is_admin %}
+      <a href="/admin">Admin</a>
+      {% endif %}
+      <a href="/logout">Logout</a>
+  </div>
+</div>
+
+<div style="padding:12px 40px 0 40px;display:flex;align-items:center;gap:10px;margin-bottom:4px;"><span style="font-size:28px;filter:drop-shadow(0 0 8px #fbbf24);">👼</span><h1 style="margin:0;font-size:22px;">AI Stock Advisor</h1><span style="color:#94a3b8;font-size:13px;margin-left:6px;">— Ask anything about stocks, portfolio, predictions</span></div>
+
+<div class="advisor-wrapper">
+
+<!-- HISTORY SIDEBAR (Claude-style) -->
+<div class="history-sidebar">
+  <div class="sidebar-header">
+    <h3>💬 History</h3>
+    <button class="new-chat-btn" onclick="newChat()">+ New</button>
+  </div>
+  <div class="session-list" id="sessionList">
+    <div class="session-empty">Loading history...</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="advisor-container">
+
+<!-- LEFT: Portfolio Summary -->
+<div class="portfolio-panel">
+
+  <div class="balance-card">
+    <h4>Available Balance</h4>
+    <p>₹ {{ balance }}</p>
+  </div>
+
+  <h3 style="margin-bottom:12px;">Your Holdings</h3>
+
+  {% if holdings %}
+    {% for h in holdings %}
+    <div class="holding-card">
+      <h4>{{ h.symbol }}</h4>
+      <div class="row"><span>Qty</span><span>{{ h.qty }}</span></div>
+      <div class="row"><span>Avg Price</span><span>₹{{ h.avg_price }}</span></div>
+      <div class="row"><span>Current</span><span>₹{{ h.current_price }}</span></div>
+      <div class="row">
+        <span>P&L</span>
+        <span class="{{ 'profit-positive' if h.profit > 0 else 'profit-negative' }}">
+          ₹{{ h.profit }} ({{ h.profit_pct }}%)
+        </span>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p style="color:#94a3b8;">No holdings yet. Buy some stocks first!</p>
+  {% endif %}
+
+</div>
+
+
+<!-- RIGHT: AI Chat -->
+<div class="chat-panel">
+<div class="chat-box">
+
+  <div class="chat-messages" id="chatMessages">
+    <div class="message">
+      <div class="avatar ai" style="font-size:20px;background:linear-gradient(135deg,#0ea5e9,#6366f1);">👼</div>
+      <div class="bubble">Hello {{ user.username }}! I'm your AI Stock Advisor. I can see your portfolio and help you make smarter trading decisions.
+
+Ask me anything like:
+• "Should I buy more Reliance?"
+• "Analyse my portfolio"
+• "Which stock should I sell?"
+• "Am I diversified enough?"</div>
+    </div>
+  </div>
+
+  <div class="quick-btns">
+    <button class="quick-btn" onclick="sendQuick('Analyse my entire portfolio and give recommendations')">📊 Analyse Portfolio</button>
+    <button class="quick-btn" onclick="sendQuick('Which of my stocks should I sell right now?')">🔴 What to Sell?</button>
+    <button class="quick-btn" onclick="sendQuick('What stocks should I buy with my available balance?')">🟢 What to Buy?</button>
+    <button class="quick-btn" onclick="sendQuick('Am I diversified enough? What are my risks?')">⚖️ Check Diversification</button>
+    <button class="quick-btn" onclick="loadRiskScore()">📊 Risk Score</button>
+    <button class="quick-btn" onclick="loadDrawdown()">📉 Drawdown Alerts</button>
+    <button class="quick-btn" onclick="loadRebalance()">🔄 Rebalancing Tips</button>
+    <button class="quick-btn" onclick="sendQuick('Grade my portfolio and give it a score A B C or D')">🏆 Portfolio Grade</button>
+    <button class="quick-btn" onclick="sendQuick('Suggest stocks similar to what I already own')">💡 Similar Stocks</button>
+    <button class="quick-btn" onclick="sendQuick('What is the future price prediction for all my stocks for next 3 months and 1 year?')">🔮 Future Predictions</button>
+    <button class="quick-btn" onclick="sendQuick('What is the best time to buy more stocks right now based on market conditions?')">📅 Best Time to Buy</button>
+  </div>
+
+  <!-- FEATURE CARDS -->
+  <div id="feature-result" style="margin-bottom:15px;"></div>
+
+  <div style="display:flex;gap:8px;margin-bottom:8px;">
+    <input type="text" id="targetStock" placeholder="Stock symbol e.g. RELIANCE.NS" style="flex:1;padding:8px;border-radius:6px;border:1px solid #334155;background:#0f172a;color:white;font-size:12px;">
+    <input type="number" id="targetPrice" placeholder="Target price" style="width:130px;padding:8px;border-radius:6px;border:1px solid #334155;background:#0f172a;color:white;font-size:12px;">
+    <button onclick="setTarget()" style="padding:8px 12px;background:#6366f1;border:none;border-radius:6px;color:white;cursor:pointer;font-size:12px;">🎯 Set Target</button>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="userInput" placeholder="Ask anything — stock analysis, predictions, risk, best time to buy..." onkeydown="if(event.key==='Enter') sendMessage()">
+    <button id="sendBtn" onclick="sendMessage()">Send</button>
+  </div>
+
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+const holdings = {{ holdings | tojson }};
+const balance = {{ balance }};
+const username = "{{ user.username }}";
+
+function buildSystemPrompt() {
+  let prompt = `You are an expert Indian stock market advisor. The user is a retail investor using a stock simulator.
+
+User: ${username}
+Available Balance: ₹${balance}
+
+Current Portfolio:
+`;
+
+  if (holdings.length === 0) {
+    prompt += "No holdings yet.\n";
+  } else {
+    holdings.forEach(h => {
+      prompt += `- ${h.symbol}: ${h.qty} shares, avg buy ₹${h.avg_price}, current ₹${h.current_price}, P&L: ₹${h.profit} (${h.profit_pct}%)\n`;
+    });
+  }
+
+  prompt += `
+Give clear, actionable advice. Use ✅ for Buy, ❌ for Sell, ⏸️ for Hold recommendations. Keep responses concise and practical. Always mention this is a simulator for educational purposes.`;
+
+  return prompt;
+}
+
+let conversationHistory = [];
+let sessionId = null;
+
+let isBusy = false;
+
+function showFeatureCard(html) {
+  document.getElementById("feature-result").innerHTML = html;
+}
+
+function clearFeatureCard() {
+  document.getElementById("feature-result").innerHTML = "";
+}
+
+function setTarget() {
+  const stock = document.getElementById("targetStock").value.trim();
+  const price = document.getElementById("targetPrice").value.trim();
+  if (!stock || !price) { alert("Enter both stock symbol and target price"); return; }
+  sendQuick(`I have set a target price of Rs ${price} for ${stock.toUpperCase()}. How realistic is this target? How long will it take to reach? What % gain is this from current price?`);
+  document.getElementById("targetStock").value = "";
+  document.getElementById("targetPrice").value = "";
+}
+
+async function loadRiskScore() {
+  showFeatureCard("<p style='color:#94a3b8;font-size:13px;'>Calculating risk score...</p>");
+  const r = await fetch("/advisor/risk");
+  const d = await r.json();
+  const color = d.score <= 3 ? "#22c55e" : d.score <= 6 ? "#f59e0b" : "#ef4444";
+  const details = d.details.length ? d.details.map(x => "<li style='font-size:13px;color:#94a3b8;margin:3px 0;'>" + x + "</li>").join("") : "<li style='color:#94a3b8;font-size:13px;'>No major risk flags</li>";
+  showFeatureCard(`<div style="background:#0f172a;border:1px solid ${color};border-radius:10px;padding:16px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div style="font-size:40px;font-weight:bold;color:${color};">${d.score}<span style="font-size:16px;color:#94a3b8;">/10</span></div>
+      <div>
+        <div style="font-weight:bold;color:white;">Portfolio Risk Score</div>
+        <div style="color:${color};font-size:14px;">${d.label}</div>
+      </div>
+    </div>
+    <ul style="margin:12px 0 0 0;padding-left:18px;">${details}</ul>
+  </div>`);
+}
+
+async function loadDrawdown() {
+  showFeatureCard("<p style='color:#94a3b8;font-size:13px;'>Checking drawdowns...</p>");
+  const r = await fetch("/advisor/drawdown");
+  const d = await r.json();
+  if (!d.alerts.length) {
+    showFeatureCard("<div style='background:#0f172a;border:1px solid #22c55e;border-radius:10px;padding:14px;margin-bottom:12px;color:#22c55e;font-size:14px;'>✅ No drawdown alerts — all positions within safe range</div>");
+    return;
+  }
+  const rows = d.alerts.map(a => `<div style="border-bottom:1px solid #1e293b;padding:10px 0;">
+    <span style="color:#ef4444;font-weight:bold;">🚨 ${a.symbol}</span>
+    <span style="color:#94a3b8;font-size:13px;margin-left:10px;">Down ${a.drop}% | Loss Rs${Math.abs(a.loss).toLocaleString()}</span>
+    <span style="color:#f59e0b;font-size:12px;margin-left:10px;">Stop-loss: Rs${a.stop_loss}</span>
+  </div>`).join("");
+  showFeatureCard(`<div style="background:#0f172a;border:1px solid #ef4444;border-radius:10px;padding:16px;margin-bottom:12px;">
+    <div style="color:#ef4444;font-weight:bold;margin-bottom:8px;">📉 Drawdown Alerts (${d.alerts.length})</div>
+    ${rows}
+  </div>`);
+}
+
+async function loadRebalance() {
+  showFeatureCard("<p style='color:#94a3b8;font-size:13px;'>Analysing portfolio balance...</p>");
+  const r = await fetch("/advisor/rebalance");
+  const d = await r.json();
+  if (!d.tips.length) {
+    showFeatureCard("<div style='background:#0f172a;border:1px solid #22c55e;border-radius:10px;padding:14px;margin-bottom:12px;color:#22c55e;font-size:14px;'>✅ Portfolio is well balanced!</div>");
+    return;
+  }
+  const icons = {trim: "✂️", add: "➕", diversify: "🌐"};
+  const rows = d.tips.map(t => `<div style="padding:8px 0;border-bottom:1px solid #1e293b;font-size:13px;">
+    <span>${icons[t.type] || "💡"}</span>
+    <span style="color:#f59e0b;font-weight:bold;margin:0 8px;">${t.symbol}</span>
+    <span style="color:#94a3b8;">${t.msg}</span>
+  </div>`).join("");
+  showFeatureCard(`<div style="background:#0f172a;border:1px solid #f59e0b;border-radius:10px;padding:16px;margin-bottom:12px;">
+    <div style="color:#f59e0b;font-weight:bold;margin-bottom:8px;">🔄 Rebalancing Tips</div>
+    ${rows}
+  </div>`);
+}
+
+async function sendMessage() {
+  if (isBusy) return;
+  const input = document.getElementById("userInput");
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = "";
+  addMessage(msg, "user");
+  await getAIResponse(msg);
+}
+
+function sendQuick(msg) {
+  if (isBusy) return;
+  document.getElementById("userInput").value = "";
+  addMessage(msg, "user");
+  getAIResponse(msg);
+}
+
+function addMessage(text, role) {
+  const box = document.getElementById("chatMessages");
+
+  const div = document.createElement("div");
+  div.className = "message" + (role === "user" ? " user" : "");
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar " + (role === "user" ? "user-av" : "ai");
+  avatar.textContent = role === "user" ? "👤" : "👼";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.innerHTML = text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>");
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function showTyping() {
+  const box = document.getElementById("chatMessages");
+  const div = document.createElement("div");
+  div.className = "message";
+  div.id = "typingIndicator";
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar ai";
+  avatar.textContent = "👼";
+
+  const typing = document.createElement("div");
+  typing.className = "typing";
+  typing.innerHTML = "<span></span><span></span><span></span>";
+
+  div.appendChild(avatar);
+  div.appendChild(typing);
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
+
+async function getAIResponse(userMsg) {
+  isBusy = true;
+  const btn = document.getElementById("sendBtn");
+  btn.disabled = true;
+  showTyping();
+
+  try {
+    const response = await fetch("/advisor/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+    message: userMsg,
+    history: conversationHistory,
+    session_id: sessionId})   
+     });
+
+    const data = await response.json();
+    removeTyping();
+
+    if (data.error) {
+      addMessage("Error: " + data.error, "ai");
+    } else if (data.reply) {
+
+  if(data.session_id){
+      sessionId = data.session_id
+  }
+
+  conversationHistory.push({role: "user", content: userMsg});
+  conversationHistory.push({role: "assistant", content: data.reply});
+
+  if (conversationHistory.length > 10)
+      conversationHistory = conversationHistory.slice(-10);
+
+  addMessage(data.reply, "ai");
+} else {
+      addMessage("No response received.", "ai");
+    }
+
+  } catch (err) {
+    removeTyping();
+    addMessage("Sorry, could not connect. Please try again.", "ai");
+  }
+
+  isBusy = false;
+  btn.disabled = false;
+}
+// Send heartbeat every 2 minutes to keep online status
+setInterval(() => {
+  fetch('/heartbeat', { method: 'POST' }).catch(() => {});
+}, 120000);
+
+
+// SIDEBAR CHAT HISTORY
+let allSessions = [];
+let activeSessionIdx = null;
+
+async function loadSessions() {
+  try {
+    const res = await fetch('/advisor/history/sessions');
+    allSessions = await res.json();
+    renderSessions();
+  } catch(e) {
+    document.getElementById('sessionList').innerHTML = '<div class="session-empty">Could not load history</div>';
+  }
+}
+
+function renderSessions() {
+  const list = document.getElementById('sessionList');
+  if (!allSessions.length) {
+    list.innerHTML = '<div class="session-empty">No history yet.<br>Start chatting!</div>';
+    return;
+  }
+  list.innerHTML = allSessions.map(function(sess, i) {
+    var firstUserMsg = sess.find(function(m) { return m.role === 'user'; });
+    var preview = firstUserMsg ? firstUserMsg.message : 'Conversation';
+    var time = sess[0] ? sess[0].time : '';
+    var isActive = activeSessionIdx === i ? 'active' : '';
+    return '<div class="session-item ' + isActive + '" onclick="loadSession(' + i + ')">' +
+      '<div class="session-date">' + time + '</div>' +
+      '<div class="session-preview">' + preview + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function loadSession(idx) {
+  activeSessionIdx = idx;
+  var sess = allSessions[idx];
+  var box = document.getElementById('chatMessages');
+  box.innerHTML = '';
+  conversationHistory = [];
+  sess.forEach(function(m) {
+    addMessage(m.full || m.message, m.role === 'user' ? 'user' : 'ai');
+    conversationHistory.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.full || m.message });
+  });
+  renderSessions();
+  box.scrollTop = box.scrollHeight;
+}
+
+function newChat() {
+
+  activeSessionIdx = null;
+  conversationHistory = [];
+  sessionId = null;
+
+  var box = document.getElementById('chatMessages');
+
+  box.innerHTML =
+  '<div class="message">' +
+  '<div class="avatar ai">👼</div>' +
+  '<div class="bubble">Hello! I am your AI Stock Advisor. Ask me anything about stocks, portfolio, predictions or market analysis!</div>' +
+  '</div>';
+
+  renderSessions();
+}
+
+// Load sessions on page load
+loadSessions();
+
+// Refresh sidebar after each AI reply
+var _origGet = getAIResponse;
+getAIResponse = async function(msg) {
+  await _origGet(msg);
+  setTimeout(loadSessions, 1500);
+};
+</script>
+
+</body>
+</html>
